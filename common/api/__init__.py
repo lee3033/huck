@@ -3,9 +3,9 @@ import os
 import requests
 from datetime import datetime, timedelta
 from common.basedir import PERSIST
-from system.version import get_version
+from selfdrive.version import version
 
-API_HOST = os.getenv('API_HOST', 'https://api.commadotai.com')
+API_HOST = os.getenv('API_HOST', 'https://api.retropilot.org')
 
 class Api():
   def __init__(self, dongle_id):
@@ -22,25 +22,25 @@ class Api():
   def request(self, method, endpoint, timeout=None, access_token=None, **params):
     return api_get(endpoint, method=method, timeout=timeout, access_token=access_token, **params)
 
-  def get_token(self, expiry_hours=1):
+  def get_token(self):
     now = datetime.utcnow()
     payload = {
       'identity': self.dongle_id,
       'nbf': now,
       'iat': now,
-      'exp': now + timedelta(hours=expiry_hours)
+      'exp': now + timedelta(hours=1)
     }
     token = jwt.encode(payload, self.private_key, algorithm='RS256')
     if isinstance(token, bytes):
       token = token.decode('utf8')
     return token
-
+    
 
 def api_get(endpoint, method='GET', timeout=None, access_token=None, **params):
   headers = {}
   if access_token is not None:
-    headers['Authorization'] = "JWT " + access_token
+    headers['Authorization'] = "JWT "+access_token
 
-  headers['User-Agent'] = "openpilot-" + get_version()
+  headers['User-Agent'] = "openpilot-" + version
 
   return requests.request(method, API_HOST + "/" + endpoint, timeout=timeout, headers=headers, params=params)
